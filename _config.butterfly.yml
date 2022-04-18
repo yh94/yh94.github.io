@@ -120,11 +120,21 @@ cover:
   position: both
   # When cover is not set, the default cover is displayed (當沒有設置cover時，默認的封面顯示)
   default_cover:
-     - https://i.loli.net/2020/05/01/gkihqEjXxJ5UZ1C.jpg
-     - https://picsum.photos/id/867/4288/2848
-     - https://picsum.photos/id/167/2896/1944
-     - https://picsum.photos/id/161/4240/2832
-     - https://picsum.photos/id/794/5145/3430
+     - https://picsum.photos/id/496/4288/2848
+     - https://picsum.photos/id/366/4000/3000
+     - https://picsum.photos/id/367/4928/3264
+     - https://picsum.photos/id/1010/5184/3456
+     - './img/9mxCGCLU9bxyeQtM.jpg'
+     - './img/CBbAorRdXo4xRS0l.jpg'
+     - './img/cEH5xSB6OlqdYrtw.jpg'
+     - './img/Gz6mGZmIsFQawF3T.jpg'
+     - './img/i5lBK9xbLj3UHwE3.jpg'
+     - './img/lKKp6BFFAriR7u6J.jpg'
+     - './img/nVtImLIfyslfo0Aq.jpg'
+     - './img/OBIeZIpYiWtepxcG.jpg'
+     - './img/rpnT9CFe51XmTO0E.jpg'
+     - './img/tY3fs1oQKkhNarBr.jpg'
+
 
 # Replace Broken Images (替換無法顯示的圖片)
 error_img:
@@ -227,7 +237,7 @@ post_pagination: 1
 noticeOutdate:
   enable: false
   style: flat # style: simple/flat
-  limit_day: 500 # When will it be shown
+  limit_day: 5000 # When will it be shown
   position: top # position: top/bottom
   message_prev: It has been
   message_next: days since the last update, the content of the article may be outdated.

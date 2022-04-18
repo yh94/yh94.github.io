@@ -53,7 +53,7 @@ Redis没有直接使用c语言传统的字符串表示，而是自己构建了�
 ----------------------------------------------------------------------------
 
 SDS结构定义如下：  
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20190416200836643.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L0FiZWxfTGl1amlucXVhbg==,size_16,color_FFFFFF,t_70)  
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20190416200836643.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L0FiZWxfTGl1amlucXVhbg==,size_16,color_FFFFFF,t_70)
 注：  
 free属性的值为0，表示这个SDS没有分配任何未使用空间。  
 len属性的值为5，表示这个SDS保存了一个五字节长的字符串。  
