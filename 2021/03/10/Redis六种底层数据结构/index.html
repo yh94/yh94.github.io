@@ -1,0 +1,331 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>redis底层数据结构 | Yu Hang-Blog</title><meta name="keywords" content="java,redis"><meta name="author" content="Hang Yu"><meta name="copyright" content="Hang Yu"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="文章目录 一、简单动态字符串  1、SDS的结构定义   2、SDS和c字符串的区别  1）SDS获取字符串长度复杂度为常数   2）SDS杜绝了缓冲区溢出 3）减少内存重分配次数 4）二进制安全 5）SDS兼容部分c字符串函数 二、双向链表  1、双向链表结构：   2、链表节点结构： 3、Redis的链表实现的特性： 三、字典  1、字典的实现结构    1）哈希表节点   2）哈希表 3）字">
+<meta property="og:type" content="article">
+<meta property="og:title" content="redis底层数据结构">
+<meta property="og:url" content="http://example.com/2021/03/10/Redis%E5%85%AD%E7%A7%8D%E5%BA%95%E5%B1%82%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/index.html">
+<meta property="og:site_name" content="Yu Hang-Blog">
+<meta property="og:description" content="文章目录 一、简单动态字符串  1、SDS的结构定义   2、SDS和c字符串的区别  1）SDS获取字符串长度复杂度为常数   2）SDS杜绝了缓冲区溢出 3）减少内存重分配次数 4）二进制安全 5）SDS兼容部分c字符串函数 二、双向链表  1、双向链表结构：   2、链表节点结构： 3、Redis的链表实现的特性： 三、字典  1、字典的实现结构    1）哈希表节点   2）哈希表 3）字">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://picsum.photos/id/161/4240/2832">
+<meta property="article:published_time" content="2021-03-09T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-04-18T02:45:57.624Z">
+<meta property="article:author" content="Hang Yu">
+<meta property="article:tag" content="java">
+<meta property="article:tag" content="redis">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://picsum.photos/id/161/4240/2832"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="http://example.com/2021/03/10/Redis%E5%85%AD%E7%A7%8D%E5%BA%95%E5%B1%82%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery@2/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery@2/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'redis底层数据结构',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2022-04-18 10:45:57'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+          const isLightMode = window.matchMedia('(prefers-color-scheme: light)').matches
+          const isNotSpecified = window.matchMedia('(prefers-color-scheme: no-preference)').matches
+          const hasNoSupport = !isDarkMode && !isLightMode && !isNotSpecified
+
+          if (t === undefined) {
+            if (isLightMode) activateLightMode()
+            else if (isDarkMode) activateDarkMode()
+            else if (isNotSpecified || hasNoSupport) {
+              const now = new Date()
+              const hour = now.getHours()
+              const isNight = hour <= 6 || hour >= 18
+              isNight ? activateDarkMode() : activateLightMode()
+            }
+            window.matchMedia('(prefers-color-scheme: dark)').addListener(function (e) {
+              if (saveToLocal.get('theme') === undefined) {
+                e.matches ? activateDarkMode() : activateLightMode()
+              }
+            })
+          } else if (t === 'light') activateLightMode()
+          else activateDarkMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.1.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="/./img/touxiang.jpeg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data is-center"><div class="data-item"><a href="/archives/"><div class="headline">文章</div><div class="length-num">11</div></a></div><div class="data-item"><a href="/tags/"><div class="headline">标签</div><div class="length-num">8</div></a></div><div class="data-item"><a href="/categories/"><div class="headline">分类</div><div class="length-num">9</div></a></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fas fa-list"></i><span> 清单</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> Music</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> Movie</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://picsum.photos/id/161/4240/2832')"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">Yu Hang-Blog</a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fas fa-list"></i><span> 清单</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> Music</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> Movie</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">redis底层数据结构</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2021-03-09T16:00:00.000Z" title="发表于 2021-03-10 00:00:00">2021-03-10</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2022-04-18T02:45:57.624Z" title="更新于 2022-04-18 10:45:57">2022-04-18</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/">java</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/java/redis/">redis</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="redis底层数据结构"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h3 id="文章目录"><a href="#文章目录" class="headerlink" title="文章目录"></a>文章目录</h3><ul>
+<li><a href="about:blank#_2">一、简单动态字符串</a></li>
+<li><ul>
+<li><a href="about:blank#1SDS_4">1、SDS的结构定义</a></li>
+</ul>
+</li>
+<li><a href="about:blank#2SDSc_11">2、SDS和c字符串的区别</a></li>
+<li><ul>
+<li><a href="about:blank#1SDS_12">1）SDS获取字符串长度复杂度为常数</a></li>
+</ul>
+</li>
+<li><a href="about:blank#2SDS_15">2）SDS杜绝了缓冲区溢出</a></li>
+<li><a href="about:blank#3_18">3）减少内存重分配次数</a></li>
+<li><a href="about:blank#4_26">4）二进制安全</a></li>
+<li><a href="about:blank#5SDSc_28">5）SDS兼容部分c字符串函数</a></li>
+<li><a href="about:blank#_31">二、双向链表</a></li>
+<li><ul>
+<li><a href="about:blank#1_32">1、双向链表结构：</a></li>
+</ul>
+</li>
+<li><a href="about:blank#2_34">2、链表节点结构：</a></li>
+<li><a href="about:blank#3Redis_36">3、Redis的链表实现的特性：</a></li>
+<li><a href="about:blank#_42">三、字典</a></li>
+<li><ul>
+<li><a href="about:blank#1_46">1、字典的实现结构</a></li>
+</ul>
+</li>
+<li><ul>
+<li><a href="about:blank#1_49">1）哈希表节点</a></li>
+</ul>
+</li>
+<li><a href="about:blank#2_55">2）哈希表</a></li>
+<li><a href="about:blank#3_61">3）字典</a></li>
+<li><a href="about:blank#2_70">2、哈希算法</a></li>
+<li><ul>
+<li><a href="about:blank#MurmurHash2_73">MurmurHash2算法</a></li>
+</ul>
+</li>
+<li><a href="about:blank#3rehash_76">3、哈希表的重新散列（rehash）</a></li>
+<li><a href="about:blank#_93">四、跳跃表</a></li>
+<li><ul>
+<li><a href="about:blank#1zskiplistNode_97">1、跳跃表节点的结构（zskiplistNode）</a></li>
+</ul>
+</li>
+<li><a href="about:blank#2zskiplist_108">2、跳跃表的结构（zskiplist）</a></li>
+<li><a href="about:blank#_117">五、整数集合</a></li>
+<li><ul>
+<li><a href="about:blank#1_119">1、整数集合的结构</a></li>
+</ul>
+</li>
+<li><a href="about:blank#2_125">2、整数集合的升级</a></li>
+<li><a href="about:blank#_135">六、压缩列表</a></li>
+<li><ul>
+<li><a href="about:blank#1_137">1、压缩列表的构成</a></li>
+</ul>
+</li>
+<li><a href="about:blank#2_147">2、压缩列表节点的结构</a></li>
+<li><a href="about:blank#3_153">3、连锁更新</a></li>
+</ul>
+<p>本文将详细介绍Redis的六种底层数据结构：简单动态字符串、双向链表、字典、跳跃表、整数集合和压缩列表。</p>
+<h1 id="一、简单动态字符串"><a href="#一、简单动态字符串" class="headerlink" title="一、简单动态字符串"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>一、简单动态字符串</h1><p>Redis没有直接使用c语言传统的字符串表示，而是自己构建了一种名为简单动态字符串的可以被修改的抽象类型，并将SDS用作Redis的默认字符串表示。</p>
+<h2 id="1、SDS的结构定义"><a href="#1、SDS的结构定义" class="headerlink" title="1、SDS的结构定义"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>1、SDS的结构定义</h2><p>SDS结构定义如下：<br><img src="https://img-blog.csdnimg.cn/20190416200836643.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L0FiZWxfTGl1amlucXVhbg==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>注：<br>free属性的值为0，表示这个SDS没有分配任何未使用空间。<br>len属性的值为5，表示这个SDS保存了一个五字节长的字符串。<br>buf属性是一个char类型的数组，数组最后保存了空字符‘\0’。</p>
+<h2 id="2、SDS和c字符串的区别"><a href="#2、SDS和c字符串的区别" class="headerlink" title="2、SDS和c字符串的区别"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>2、SDS和c字符串的区别</h2><h3 id="1）SDS获取字符串长度复杂度为常数"><a href="#1）SDS获取字符串长度复杂度为常数" class="headerlink" title="1）SDS获取字符串长度复杂度为常数"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>1）SDS获取字符串长度复杂度为常数</h3><p>SDS通过获取len属性就可以得到字符串的长度，时间复杂度为： O ( 1 ) O(1) O(1)<br>c字符串需要遍历字符串，时间复杂度为： O ( N ) O(N) O(N)</p>
+<h3 id="2）SDS杜绝了缓冲区溢出"><a href="#2）SDS杜绝了缓冲区溢出" class="headerlink" title="2）SDS杜绝了缓冲区溢出"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>2）SDS杜绝了缓冲区溢出</h3><p>c字符串如果没有重新分配空间，直接修改字符串的话，可能会造成数据溢出。<br>当SDS的API需要对SDS进行修改时，API会先检查SDS的空间是否满足修改所需的需求，如果不满足，则自动将SDS空间扩展至所需大小。</p>
+<h3 id="3）减少内存重分配次数"><a href="#3）减少内存重分配次数" class="headerlink" title="3）减少内存重分配次数"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>3）减少内存重分配次数</h3><p>SDS通过空间预分配和惰性空间释放两种优化策略来减少内存重分配次数。</p>
+<ul>
+<li>空间预分配<br>Redis通过额外分配未使用的空间，优化了SDS的字符串增长操作，减少了连续执行字符串增长操作所需的内存分配次数。</li>
+<li>惰性空间释放<br>惰性空间释放用于优化SDS的字符串缩短操作。当SDS缩短时，程序并不会立即回收缩短后多出来的空间，而是使用free属性将这些字节的数量记录起来，等待将来使用<br>注：如果需要真正地释放SDS的未使用空间，我们可以使用相应的API。</li>
+</ul>
+<h3 id="4）二进制安全"><a href="#4）二进制安全" class="headerlink" title="4）二进制安全"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>4）二进制安全</h3><p>SDS API会以处理二进制的方式来处理SDS存放在buf数组里的数据，程序不会对其中的数据做任何的限制、过滤或者假设，所以SDS的API都是二进制安全的。</p>
+<h3 id="5）SDS兼容部分c字符串函数"><a href="#5）SDS兼容部分c字符串函数" class="headerlink" title="5）SDS兼容部分c字符串函数"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>5）SDS兼容部分c字符串函数</h3><p>SDS之所以在末尾保存一个空字符’\0’，是为了使用一些c字符串&lt;string.h&gt;函数库，避免不必要的代码重复。<br>例如 字符串对比函数：&lt;string.h&gt;&#x2F;strcasecmp函数</p>
+<h1 id="二、双向链表"><a href="#二、双向链表" class="headerlink" title="二、双向链表"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>二、双向链表</h1><h2 id="1、双向链表结构："><a href="#1、双向链表结构：" class="headerlink" title="1、双向链表结构："></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>1、双向链表结构：</h2><p><img src="https://img-blog.csdnimg.cn/2019041620100646.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L0FiZWxfTGl1amlucXVhbg==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h2 id="2、链表节点结构："><a href="#2、链表节点结构：" class="headerlink" title="2、链表节点结构："></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>2、链表节点结构：</h2><p><img src="https://img-blog.csdnimg.cn/20190416201057683.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L0FiZWxfTGl1amlucXVhbg==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h2 id="3、Redis的链表实现的特性："><a href="#3、Redis的链表实现的特性：" class="headerlink" title="3、Redis的链表实现的特性："></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>3、Redis的链表实现的特性：</h2><ul>
+<li>双端</li>
+<li>无环</li>
+<li>带表头指针和表尾指针</li>
+<li>带链表长度计数器</li>
+<li>多态（保存各种不同类型的值）</li>
+</ul>
+<h1 id="三、字典"><a href="#三、字典" class="headerlink" title="三、字典"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>三、字典</h1><p>字典，又被称为符号表、关联数组或映射，是一种用于保存键值对的抽象数据结构。<br>字典中的每个键都是独一无二的，程序可以在字典中根据键查找与之关联的值，或者通过键来更新值，又或者根据键来删除整个键值对，等等。<br>字典用途：Redis数据库底层实现、哈希键底层实现。</p>
+<h2 id="1、字典的实现结构"><a href="#1、字典的实现结构" class="headerlink" title="1、字典的实现结构"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>1、字典的实现结构</h2><p>Redis的字典使用哈希表作为底层实现，一个哈希表里面可以有多个哈希表节点，而每个哈希表节点就保存了字典中的一个键值对。<br>接下来的三个小节将分别介绍Redis的哈希表节点、哈希表以及字典的实现。</p>
+<h3 id="1）哈希表节点"><a href="#1）哈希表节点" class="headerlink" title="1）哈希表节点"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>1）哈希表节点</h3><p><img src="https://img-blog.csdnimg.cn/20190416204526782.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L0FiZWxfTGl1amlucXVhbg==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<ul>
+<li>key属性保存着键值对中的键；</li>
+<li>v属性保存着键值对中的值，其中值用union定义，支持三种数据类型。</li>
+<li>next属性是指向另一个哈希表节点的指针，这个指针可以将多个哈希值相同的键值对连接在一起，以此来解决键冲突的问题。</li>
+</ul>
+<h3 id="2）哈希表"><a href="#2）哈希表" class="headerlink" title="2）哈希表"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>2）哈希表</h3><p><img src="https://img-blog.csdnimg.cn/2019041620504380.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L0FiZWxfTGl1amlucXVhbg==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<ul>
+<li>table属性是一个数组，数组中的每个元素都是一个指向哈希表节点的指针，每个节点都保存着一个键值对；</li>
+<li>size属性记录了哈希表的大小，也就是table数组的大小；</li>
+<li>sizemask属性的值总是等于size-1，这个属性和哈希值一起决定一个键应该被放到table数组的那个索引上面；</li>
+<li>used属性记录了哈希表目前已有节点的数量。</li>
+</ul>
+<h3 id="3）字典"><a href="#3）字典" class="headerlink" title="3）字典"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>3）字典</h3><p><img src="https://img-blog.csdnimg.cn/20190416205910583.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L0FiZWxfTGl1amlucXVhbg==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<ul>
+<li>type属性是一个指向dictType结构的指针，每个dictType结构保存了一簇用于操作特定类型键值对的函数；</li>
+<li>privdata属性保存了需要传给那些类型特定函数的可选参数；</li>
+<li>ht属性是一个包含两个项的数组，数组中的每个项都是一个dictht哈希表，ht[1]只有在对ht[0]哈希表进行rehash操作时使用；</li>
+<li>trehashidx属性是rehash索引，没有进行rehash操作时值都为-1.</li>
+</ul>
+<p>字典、哈希表和哈希表节点关系图：<br><img src="https://img-blog.csdnimg.cn/20190416211628239.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L0FiZWxfTGl1amlucXVhbg==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h2 id="2、哈希算法"><a href="#2、哈希算法" class="headerlink" title="2、哈希算法"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>2、哈希算法</h2><p>当要将一个新的键值对添加到字典里面时，程序需要先根据键值对的键计算出哈希值和索引值，然后再根据索引值，将包含新键值对的哈希表节点放到哈希表数组的指定索引上。<br>若果字典被用做数据库的底层实现，或者哈希键的底层实现时，Redis使用MurmurHash2算法来计算键的哈希值。</p>
+<h3 id="MurmurHash2算法"><a href="#MurmurHash2算法" class="headerlink" title="MurmurHash2算法"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>MurmurHash2算法</h3><p>MurmurHash2算法用来计算键的哈希值，特点是运算性能高，碰撞率低。<br>详细参考：<a target="_blank" rel="noopener" href="https://blog.csdn.net/thinkmo/article/details/26833565">https://blog.csdn.net/thinkmo/article/details/26833565</a></p>
+<h2 id="3、哈希表的重新散列（rehash）"><a href="#3、哈希表的重新散列（rehash）" class="headerlink" title="3、哈希表的重新散列（rehash）"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>3、哈希表的重新散列（rehash）</h2><p>随着操作的不断执行，哈希表保存的键值对会主键增多或者减少，当哈希表保存的键值对数量太多或者太少时，程序需要对哈希表的大小进行相应的扩展或者收缩。<br>扩展和收缩哈希表的工作可以通过执行rehash（重新散列）操作来完成，步骤如下：</p>
+<p><strong>1）为字典的ht[1]哈希表分配空间，空间大小根据实际情况而定；</strong></p>
+<p><strong>2）将ht[0]中所有键值对rehash到ht[1]中</strong><br>注意：rehash指的是重新计算键的哈希值和索引值，然后将键值对放置到ht[1]哈希表的指定位置上</p>
+<p><strong>3）释放ht[0]，将ht[1]设置为ht[0]，并在ht[1]新建一个空表，为下次rehash做准备</strong><br>rehash操作的结构变化如下：</p>
+<p><img src="https://img-blog.csdnimg.cn/20190417091847145.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L0FiZWxfTGl1amlucXVhbg==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>注：<br>rehash操作是渐进式的。<br>渐进式的rehash将rehash键值对所需的计算工作均摊到对字典的每个添加、删除、查找和更新操作上。<br>之所以这样做，是考虑到如果哈希表保存的键值对的数量是百万级甚至千万级时，一次性进行rehash可能会导致服务器停止服务，渐进式地rehash避免了对服务器性能造成影响。</p>
+<h1 id="四、跳跃表"><a href="#四、跳跃表" class="headerlink" title="四、跳跃表"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>四、跳跃表</h1><p>跳跃表是一种有序数据结构，它通过在每个节点中维持多个指向其他节点的指针，从而达到快速访问节点的目的。<br>Redis使用跳跃表作为有序集合键的底层实现之一，如果一个有序集合包含的元素数量比较多，又或者有序集合中元素的成员是比较长的字符串时，Redis就会使用跳跃表来作为有序集合键的底层实现。<br>Redis只在两个地方用到了跳跃表，一个是实现有序集合键，另一个是在集群结点中用作内部数据结构，除此之外，跳跃表没有其他用途。</p>
+<h2 id="1、跳跃表节点的结构（zskiplistNode）"><a href="#1、跳跃表节点的结构（zskiplistNode）" class="headerlink" title="1、跳跃表节点的结构（zskiplistNode）"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>1、跳跃表节点的结构（zskiplistNode）</h2><p><img src="https://img-blog.csdnimg.cn/20190417212726757.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L0FiZWxfTGl1amlucXVhbg==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<ul>
+<li><strong>层</strong>：跳跃表节点的 level[] 数组可以包含多个元素，每个元素都包含一个指向其他节点的指针 和 跨度，下标从0开始为第一层；</li>
+<li><strong>前进指针</strong>：每个层都有一个指向表尾方向的前进指针，用于从表头向表尾方向访问节点；</li>
+<li><strong>跨度</strong>：层的跨度用于记录两个节点之间的距离，指向NULL的所有前进指针的跨度为0；跨度用来计算节点的排位：在查找某个节点的过程中，将沿途访问过的所有层的跨度累计起来，得到的结果就是目标节点在跳跃表中的排位。</li>
+<li><strong>后退指针</strong>：后退指针用于从表尾向表头方向访问节点，每次只能后退一个节点；</li>
+<li><strong>分值和成员</strong>：<br>分值：一个double类型的浮点数，所有节点都按照分值从小到大排序，多个节点可以包含相同的分值；<br>成员：一个指针，指向一个字符串对象，该字符串对象保存着一个SDS值，成员对象必须是唯一的。</li>
+</ul>
+<h2 id="2、跳跃表的结构（zskiplist）"><a href="#2、跳跃表的结构（zskiplist）" class="headerlink" title="2、跳跃表的结构（zskiplist）"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>2、跳跃表的结构（zskiplist）</h2><p>仅靠过个跳跃表节点就可以组成一个跳跃表，但通过使用一个zskiplist结构来持有这些节点，就可以很方便地对整个跳跃表进行处理。<br>zskiplist结构如图：<img src="https://img-blog.csdnimg.cn/20190417215602606.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L0FiZWxfTGl1amlucXVhbg==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<ul>
+<li>header和tail指针分别指向跳跃表的表头和表尾节点；</li>
+<li>length属性记录节点的数量；</li>
+<li>level属性记录层数最高的几点的层数量；</li>
+</ul>
+<p>下图分别展示了完整的跳跃表和单个节点的详细结构图：<br><img src="https://img-blog.csdnimg.cn/20190417222432637.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L0FiZWxfTGl1amlucXVhbg==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h1 id="五、整数集合"><a href="#五、整数集合" class="headerlink" title="五、整数集合"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>五、整数集合</h1><p>整数集合是Redis用于保存整数值的集合抽象数据结构，它可以保存类型为 int16_t 、int32_t 或者 int64_t 的整数值，并且保证集合中不出现重复值。</p>
+<h2 id="1、整数集合的结构"><a href="#1、整数集合的结构" class="headerlink" title="1、整数集合的结构"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>1、整数集合的结构</h2><p><img src="https://img-blog.csdnimg.cn/20190417224045599.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L0FiZWxfTGl1amlucXVhbg==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<ul>
+<li><strong>encoding</strong>：contents数组中元素的类型，有 INTSET_ENC_INT16、INTSET_ENC_INT32 和 INTSET_ENC_INT64 三种，分别表示contents数组中元素类型为 int16_t（16位二进制）、int32_t 和 int64_t 类型。</li>
+<li><strong>contents</strong>：整数集合的每个元素都是contents数组的一个数组项，各个项在数组中按值的大小从小到大有序地排列，数组中不包含重复项。</li>
+<li><strong>length</strong>：记录了整数集合包含的元素数量。<br><img src="https://img-blog.csdnimg.cn/20190418131716416.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L0FiZWxfTGl1amlucXVhbg==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></li>
+</ul>
+<h2 id="2、整数集合的升级"><a href="#2、整数集合的升级" class="headerlink" title="2、整数集合的升级"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>2、整数集合的升级</h2><p>如果我们想要添加一个新元素到整数集合里面，但是新元素的类型比整数集合原有的元素类型都要长时，我们就要对整数集合进行升级，然后才能将新元素添加到整数集合里面。<br>另外，还需注意，Redis的整数集合不支持降级。</p>
+<p><strong>升级整数集合并添加新元素共分为三步进行：</strong><br>1）根据新元素的类型，扩展整数集合底层数组的空间大小，并为新元素分配空间。<br>2）将底层数组现有的所有元素都转换成与新元素相同的类型，并将类型转换后的元素继续维持底层数组的有序性质不变。<br>3）将新元素添加到底层数组里面。</p>
+<p>升级步骤图解：<img src="https://img-blog.csdnimg.cn/20190418133651854.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L0FiZWxfTGl1amlucXVhbg==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h1 id="六、压缩列表"><a href="#六、压缩列表" class="headerlink" title="六、压缩列表"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>六、压缩列表</h1><p>压缩列表是列表键和哈希键的底层实现之一。当一个列表键值包含少量列表键，并且每个列表项要么就是小整数值，要么就是长度比较短的字符串，那么Redis就会使用压缩列表来做列表键的底层实现。</p>
+<h2 id="1、压缩列表的构成"><a href="#1、压缩列表的构成" class="headerlink" title="1、压缩列表的构成"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>1、压缩列表的构成</h2><p>压缩列表是由一系列特殊编码的连续内存块组成的顺序型数据结构，一个压缩列表可以包含任意多个节点 （entry），每个节点可以保存一个字节数组或者一个整数值。</p>
+<p>压缩列表结构：<img src="https://img-blog.csdnimg.cn/20190419083726519.png" alt="在这里插入图片描述"></p>
+<ul>
+<li>zlbytes属性：表示压缩列表的总字节长度；</li>
+<li>zltail属性：记录压缩列表表尾节点距离压缩列表的起始地址有多少字节；</li>
+<li>zllen属性：记录了压缩列表包含的节点数量；</li>
+<li>entryX属性：压缩列表包含的各个节点；</li>
+<li>zlend属性：用于标记压缩列表的末端。</li>
+</ul>
+<h2 id="2、压缩列表节点的结构"><a href="#2、压缩列表节点的结构" class="headerlink" title="2、压缩列表节点的结构"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>2、压缩列表节点的结构</h2><p>压缩列表节点的结构如图：<img src="https://img-blog.csdnimg.cn/20190419085114429.png" alt="在这里插入图片描述"></p>
+<ul>
+<li><strong>previous_entry_length属性</strong>：以字节为单位，记录压缩列表中前一个节点的长度。<br>程序可以通过指针运算，根据当前节点的起始地址来计算出前一个节点的起始地址，以此实现遍历操作。</li>
+<li><strong>encoding属性</strong>：记录了节点的content属性所保存数据的类型和长度；</li>
+<li><strong>content属性</strong>：保存节点的值，可以是一个字节数组或者整数，值的类型和长度由节点的encoding属性决定。</li>
+</ul>
+<h2 id="3、连锁更新"><a href="#3、连锁更新" class="headerlink" title="3、连锁更新"></a><a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599"></a>3、连锁更新</h2><p>假设压缩列表中所有节点的previous_entry_length属性都是用1字节来保存，那么节点的长度只要小于等于253字节previous_entry_length都可以记录，但是，如果添加一个长度大于253字节的节点，那么下一个节点的previous_entry_length就无法保存该长度的值，同样的，下下个节点也无法保存上个节点的长度，由此将导致连续多次空间扩展操作。</p>
+<p>添加节点和删除节点都可能导致连锁更新，但是这种操作出现的几率很低。</p>
+<p>本文转自 <a target="_blank" rel="noopener" href="https://blog.csdn.net/Abel_Liujinquan/article/details/89339599">https://blog.csdn.net/Abel_Liujinquan&#x2F;article&#x2F;details&#x2F;89339599</a>，如有侵权，请联系删除。</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="mailto:undefined">Hang Yu</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="http://example.com/2021/03/10/Redis%E5%85%AD%E7%A7%8D%E5%BA%95%E5%B1%82%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">http://example.com/2021/03/10/Redis%E5%85%AD%E7%A7%8D%E5%BA%95%E5%B1%82%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://example.com" target="_blank">Yu Hang-Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/java/">java</a><a class="post-meta__tags" href="/tags/redis/">redis</a></div><div class="post_share"><div class="social-share" data-image="https://picsum.photos/id/161/4240/2832" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2021/07/16/explain%E8%AF%A6%E8%A7%A3/"><img class="prev-cover" src="https://picsum.photos/id/794/5145/3430" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">explain详解</div></div></a></div><div class="next-post pull-right"><a href="/2020/05/30/%E7%A3%81%E7%9B%98%E6%89%A9%E5%AE%B9/"><img class="next-cover" src="https://i.loli.net/2020/05/01/gkihqEjXxJ5UZ1C.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">磁盘扩容</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><div><a href="/2022/04/16/redis%E7%BA%BF%E4%B8%8A%E6%8E%92%E6%9F%A5/" title="redis问题排查"><img class="cover" src="https://picsum.photos/id/794/5145/3430" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-04-16</div><div class="title">redis问题排查</div></div></a></div><div><a href="/2022/04/16/QPS%E3%80%81TPS%E3%80%81%E5%B9%B6%E5%8F%91%E6%95%B0/" title="QPS、TPS、并发数"><img class="cover" src="https://picsum.photos/id/794/5145/3430" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-04-16</div><div class="title">QPS、TPS、并发数</div></div></a></div><div><a href="/2021/07/16/explain%E8%AF%A6%E8%A7%A3/" title="explain详解"><img class="cover" src="https://picsum.photos/id/794/5145/3430" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-07-16</div><div class="title">explain详解</div></div></a></div><div><a href="/2022/04/16/find%E5%91%BD%E4%BB%A4/" title="find命令"><img class="cover" src="https://picsum.photos/id/167/2896/1944" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-04-16</div><div class="title">find命令</div></div></a></div><div><a href="/2022/02/16/rabbitmq%E4%BF%9D%E8%AF%81%E6%B6%88%E6%81%AF/" title="如何保证消息的可靠性传输？（如何处理消息丢失的问题）"><img class="cover" src="https://picsum.photos/id/161/4240/2832" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-02-16</div><div class="title">如何保证消息的可靠性传输？（如何处理消息丢失的问题）</div></div></a></div><div><a href="/2022/04/16/optional/" title="java8之optionAl用法"><img class="cover" src="https://picsum.photos/id/161/4240/2832" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-04-16</div><div class="title">java8之optionAl用法</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="/./img/touxiang.jpeg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">Hang Yu</div><div class="author-info__description">欢迎来到我的王国</div></div><div class="card-info-data is-center"><div class="card-info-data-item"><a href="/archives/"><div class="headline">文章</div><div class="length-num">11</div></a></div><div class="card-info-data-item"><a href="/tags/"><div class="headline">标签</div><div class="length-num">8</div></a></div><div class="card-info-data-item"><a href="/categories/"><div class="headline">分类</div><div class="length-num">9</div></a></div></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/yh94"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/yh94" target="_blank" title="Github"><i class="fab fa-github"></i></a><a class="social-icon" href="/18720982524@163.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">人无再少年</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%96%87%E7%AB%A0%E7%9B%AE%E5%BD%95"><span class="toc-number">1.</span> <span class="toc-text">文章目录</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E7%AE%80%E5%8D%95%E5%8A%A8%E6%80%81%E5%AD%97%E7%AC%A6%E4%B8%B2"><span class="toc-number"></span> <span class="toc-text">一、简单动态字符串</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1%E3%80%81SDS%E7%9A%84%E7%BB%93%E6%9E%84%E5%AE%9A%E4%B9%89"><span class="toc-number"></span> <span class="toc-text">1、SDS的结构定义</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2%E3%80%81SDS%E5%92%8Cc%E5%AD%97%E7%AC%A6%E4%B8%B2%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="toc-number"></span> <span class="toc-text">2、SDS和c字符串的区别</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1%EF%BC%89SDS%E8%8E%B7%E5%8F%96%E5%AD%97%E7%AC%A6%E4%B8%B2%E9%95%BF%E5%BA%A6%E5%A4%8D%E6%9D%82%E5%BA%A6%E4%B8%BA%E5%B8%B8%E6%95%B0"><span class="toc-number">1.</span> <span class="toc-text">1）SDS获取字符串长度复杂度为常数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2%EF%BC%89SDS%E6%9D%9C%E7%BB%9D%E4%BA%86%E7%BC%93%E5%86%B2%E5%8C%BA%E6%BA%A2%E5%87%BA"><span class="toc-number">2.</span> <span class="toc-text">2）SDS杜绝了缓冲区溢出</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3%EF%BC%89%E5%87%8F%E5%B0%91%E5%86%85%E5%AD%98%E9%87%8D%E5%88%86%E9%85%8D%E6%AC%A1%E6%95%B0"><span class="toc-number">3.</span> <span class="toc-text">3）减少内存重分配次数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4%EF%BC%89%E4%BA%8C%E8%BF%9B%E5%88%B6%E5%AE%89%E5%85%A8"><span class="toc-number">4.</span> <span class="toc-text">4）二进制安全</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5%EF%BC%89SDS%E5%85%BC%E5%AE%B9%E9%83%A8%E5%88%86c%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%87%BD%E6%95%B0"><span class="toc-number">5.</span> <span class="toc-text">5）SDS兼容部分c字符串函数</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%8F%8C%E5%90%91%E9%93%BE%E8%A1%A8"><span class="toc-number"></span> <span class="toc-text">二、双向链表</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1%E3%80%81%E5%8F%8C%E5%90%91%E9%93%BE%E8%A1%A8%E7%BB%93%E6%9E%84%EF%BC%9A"><span class="toc-number"></span> <span class="toc-text">1、双向链表结构：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2%E3%80%81%E9%93%BE%E8%A1%A8%E8%8A%82%E7%82%B9%E7%BB%93%E6%9E%84%EF%BC%9A"><span class="toc-number"></span> <span class="toc-text">2、链表节点结构：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3%E3%80%81Redis%E7%9A%84%E9%93%BE%E8%A1%A8%E5%AE%9E%E7%8E%B0%E7%9A%84%E7%89%B9%E6%80%A7%EF%BC%9A"><span class="toc-number"></span> <span class="toc-text">3、Redis的链表实现的特性：</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E5%AD%97%E5%85%B8"><span class="toc-number"></span> <span class="toc-text">三、字典</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1%E3%80%81%E5%AD%97%E5%85%B8%E7%9A%84%E5%AE%9E%E7%8E%B0%E7%BB%93%E6%9E%84"><span class="toc-number"></span> <span class="toc-text">1、字典的实现结构</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1%EF%BC%89%E5%93%88%E5%B8%8C%E8%A1%A8%E8%8A%82%E7%82%B9"><span class="toc-number">1.</span> <span class="toc-text">1）哈希表节点</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2%EF%BC%89%E5%93%88%E5%B8%8C%E8%A1%A8"><span class="toc-number">2.</span> <span class="toc-text">2）哈希表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3%EF%BC%89%E5%AD%97%E5%85%B8"><span class="toc-number">3.</span> <span class="toc-text">3）字典</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2%E3%80%81%E5%93%88%E5%B8%8C%E7%AE%97%E6%B3%95"><span class="toc-number"></span> <span class="toc-text">2、哈希算法</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#MurmurHash2%E7%AE%97%E6%B3%95"><span class="toc-number">1.</span> <span class="toc-text">MurmurHash2算法</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3%E3%80%81%E5%93%88%E5%B8%8C%E8%A1%A8%E7%9A%84%E9%87%8D%E6%96%B0%E6%95%A3%E5%88%97%EF%BC%88rehash%EF%BC%89"><span class="toc-number"></span> <span class="toc-text">3、哈希表的重新散列（rehash）</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E8%B7%B3%E8%B7%83%E8%A1%A8"><span class="toc-number"></span> <span class="toc-text">四、跳跃表</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1%E3%80%81%E8%B7%B3%E8%B7%83%E8%A1%A8%E8%8A%82%E7%82%B9%E7%9A%84%E7%BB%93%E6%9E%84%EF%BC%88zskiplistNode%EF%BC%89"><span class="toc-number"></span> <span class="toc-text">1、跳跃表节点的结构（zskiplistNode）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2%E3%80%81%E8%B7%B3%E8%B7%83%E8%A1%A8%E7%9A%84%E7%BB%93%E6%9E%84%EF%BC%88zskiplist%EF%BC%89"><span class="toc-number"></span> <span class="toc-text">2、跳跃表的结构（zskiplist）</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E6%95%B4%E6%95%B0%E9%9B%86%E5%90%88"><span class="toc-number"></span> <span class="toc-text">五、整数集合</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1%E3%80%81%E6%95%B4%E6%95%B0%E9%9B%86%E5%90%88%E7%9A%84%E7%BB%93%E6%9E%84"><span class="toc-number"></span> <span class="toc-text">1、整数集合的结构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2%E3%80%81%E6%95%B4%E6%95%B0%E9%9B%86%E5%90%88%E7%9A%84%E5%8D%87%E7%BA%A7"><span class="toc-number"></span> <span class="toc-text">2、整数集合的升级</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E5%8E%8B%E7%BC%A9%E5%88%97%E8%A1%A8"><span class="toc-number"></span> <span class="toc-text">六、压缩列表</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1%E3%80%81%E5%8E%8B%E7%BC%A9%E5%88%97%E8%A1%A8%E7%9A%84%E6%9E%84%E6%88%90"><span class="toc-number"></span> <span class="toc-text">1、压缩列表的构成</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2%E3%80%81%E5%8E%8B%E7%BC%A9%E5%88%97%E8%A1%A8%E8%8A%82%E7%82%B9%E7%9A%84%E7%BB%93%E6%9E%84"><span class="toc-number"></span> <span class="toc-text">2、压缩列表节点的结构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3%E3%80%81%E8%BF%9E%E9%94%81%E6%9B%B4%E6%96%B0"><span class="toc-number"></span> <span class="toc-text">3、连锁更新</span></a></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2022/04/16/QPS%E3%80%81TPS%E3%80%81%E5%B9%B6%E5%8F%91%E6%95%B0/" title="QPS、TPS、并发数"><img src="https://picsum.photos/id/794/5145/3430" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="QPS、TPS、并发数"/></a><div class="content"><a class="title" href="/2022/04/16/QPS%E3%80%81TPS%E3%80%81%E5%B9%B6%E5%8F%91%E6%95%B0/" title="QPS、TPS、并发数">QPS、TPS、并发数</a><time datetime="2022-04-16T02:57:12.000Z" title="发表于 2022-04-16 10:57:12">2022-04-16</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/04/16/find%E5%91%BD%E4%BB%A4/" title="find命令"><img src="https://picsum.photos/id/167/2896/1944" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="find命令"/></a><div class="content"><a class="title" href="/2022/04/16/find%E5%91%BD%E4%BB%A4/" title="find命令">find命令</a><time datetime="2022-04-16T02:57:12.000Z" title="发表于 2022-04-16 10:57:12">2022-04-16</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/04/16/optional/" title="java8之optionAl用法"><img src="https://picsum.photos/id/161/4240/2832" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="java8之optionAl用法"/></a><div class="content"><a class="title" href="/2022/04/16/optional/" title="java8之optionAl用法">java8之optionAl用法</a><time datetime="2022-04-16T02:57:12.000Z" title="发表于 2022-04-16 10:57:12">2022-04-16</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/04/16/redis%E7%BA%BF%E4%B8%8A%E6%8E%92%E6%9F%A5/" title="redis问题排查"><img src="https://picsum.photos/id/794/5145/3430" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="redis问题排查"/></a><div class="content"><a class="title" href="/2022/04/16/redis%E7%BA%BF%E4%B8%8A%E6%8E%92%E6%9F%A5/" title="redis问题排查">redis问题排查</a><time datetime="2022-04-16T02:57:12.000Z" title="发表于 2022-04-16 10:57:12">2022-04-16</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/04/16/synchronized%E5%92%8Creentrantlock%E5%8C%BA%E5%88%AB/" title="synchronized和reentrantlock区别"><img src="https://picsum.photos/id/161/4240/2832" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="synchronized和reentrantlock区别"/></a><div class="content"><a class="title" href="/2022/04/16/synchronized%E5%92%8Creentrantlock%E5%8C%BA%E5%88%AB/" title="synchronized和reentrantlock区别">synchronized和reentrantlock区别</a><time datetime="2022-04-16T02:57:12.000Z" title="发表于 2022-04-16 10:57:12">2022-04-16</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2019 - 2022 By Hang Yu</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Can I make a friend with you ？</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="chat_btn" type="button" title="聊天"><i class="fas fa-sms"></i></button><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.js"></script><script>var preloader = {
+  endLoading: () => {
+    document.body.style.overflow = 'auto';
+    document.getElementById('loading-box').classList.add("loaded")
+  },
+  initLoading: () => {
+    document.body.style.overflow = '';
+    document.getElementById('loading-box').classList.remove("loaded")
+
+  }
+}
+window.addEventListener('load',preloader.endLoading())</script><div class="js-pjax"></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
