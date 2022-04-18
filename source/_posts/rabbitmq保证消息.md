@@ -1,6 +1,6 @@
 ---
 title: 如何保证消息的可靠性传输？（如何处理消息丢失的问题）
-date: 2022-04-16 10:57:12
+date: 2022-02-16 
 cover: https://picsum.photos/id/161/4240/2832
 tags: 
   - java
