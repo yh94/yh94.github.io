@@ -4,6 +4,35 @@
   
     
     <entry>
+      <title>数据结构网址</title>
+      <link href="/2022/04/18/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E7%BD%91%E5%9D%80/"/>
+      <url>/2022/04/18/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E7%BD%91%E5%9D%80/</url>
+      
+        <content type="html"><![CDATA[<h3 id="这是一个可以观察各种数据结构的网址"><a href="#这是一个可以观察各种数据结构的网址" class="headerlink" title="这是一个可以观察各种数据结构的网址"></a>这是一个可以观察各种数据结构的网址</h3><p><a href="https://www.cs.usfca.edu/~galles/visualization/RedBlack.html">https://www.cs.usfca.edu/~galles/visualization/RedBlack.html</a></p>]]></content>
+      
+      
+      <categories>
+          
+          <category> java </category>
+          
+          <category> 数据结构 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> java </tag>
+            
+            <tag> 数据结构 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>QPS、TPS、并发数</title>
       <link href="/2022/04/16/QPS%E3%80%81TPS%E3%80%81%E5%B9%B6%E5%8F%91%E6%95%B0/"/>
       <url>/2022/04/16/QPS%E3%80%81TPS%E3%80%81%E5%B9%B6%E5%8F%91%E6%95%B0/</url>
@@ -31,11 +60,11 @@
     
     
     <entry>
-      <title>find命令</title>
-      <link href="/2022/04/16/find%E5%91%BD%E4%BB%A4/"/>
-      <url>/2022/04/16/find%E5%91%BD%E4%BB%A4/</url>
+      <title>java8之optionAl用法</title>
+      <link href="/2022/04/16/optional/"/>
+      <url>/2022/04/16/optional/</url>
       
-        <content type="html"><![CDATA[<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">将当前目录及其子目录下所有文件后缀为 .c 的文件列出来:</span><br><span class="line"># find . -name &quot;*.c&quot;</span><br><span class="line">将当前目录及其子目录中的所有文件列出：</span><br><span class="line"></span><br><span class="line"># find . -type f</span><br><span class="line">将当前目录及其子目录下所有最近 20 天内更新过的文件列出:</span><br><span class="line"></span><br><span class="line"># find . -ctime -20</span><br><span class="line">查找 /var/log 目录中更改时间在 7 日以前的普通文件，并在删除之前询问它们：</span><br><span class="line"></span><br><span class="line"># find /var/log -type f -mtime +7 -ok rm &#123;&#125; \;</span><br><span class="line">查找当前目录中文件属主具有读、写权限，并且文件所属组的用户和其他用户具有读权限的文件：</span><br><span class="line"></span><br><span class="line"># find . -type f -perm 644 -exec ls -l &#123;&#125; \;</span><br><span class="line">查找系统中所有文件长度为 0 的普通文件，并列出它们的完整路径：</span><br><span class="line"></span><br><span class="line"># find / -type f -size 0 -exec ls -l &#123;&#125; \;</span><br></pre></td></tr></table></figure>]]></content>
+        <content type="html"><![CDATA[<h1 id="实战使用"><a href="#实战使用" class="headerlink" title="实战使用"></a>实战使用</h1><blockquote><p>以前写法</p></blockquote><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">public String getCity(User user)  throws Exception&#123;</span><br><span class="line">        if(user!=null)&#123;</span><br><span class="line">            if(user.getAddress()!=null)&#123;</span><br><span class="line">                Address address = user.getAddress();</span><br><span class="line">                if(address.getCity()!=null)&#123;</span><br><span class="line">                    return address.getCity();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        throw new Excpetion(&quot;取值错误&quot;); </span><br><span class="line">    &#125;</span><br><span class="line">```    </span><br><span class="line">&gt; JAVA8写法</span><br></pre></td></tr></table></figure><p>public String getCity(User user) throws Exception{<br>    return Optional.ofNullable(user)<br>                   .map(u-&gt; u.getAddress())<br>                   .map(a-&gt;a.getCity())<br>                   .orElseThrow(()-&gt;new Exception(“取指错误”));<br>}</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># 例二</span><br><span class="line">&gt; 以前写法</span><br></pre></td></tr></table></figure><p>if(user!&#x3D;null){<br>    dosomething(user);<br>}</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&gt; JAVA8写法</span><br></pre></td></tr></table></figure><p> Optional.ofNullable(user)<br>    .ifPresent(u-&gt;{<br>        dosomething(u);<br>});</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># 例三</span><br><span class="line"></span><br><span class="line">&gt; 以前写法</span><br></pre></td></tr></table></figure><p>public User getUser(User user) throws Exception{<br>    if(user!&#x3D;null){<br>        String name &#x3D; user.getName();<br>        if(“zhangsan”.equals(name)){<br>            return user;<br>        }<br>    }else{<br>        user &#x3D; new User();<br>        user.setName(“zhangsan”);<br>        return user;<br>    }<br>}</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&gt; java8写法</span><br></pre></td></tr></table></figure><p>public User getUser(User user) {<br>    return Optional.ofNullable(user)<br>                   .filter(u-&gt;”zhangsan”.equals(u.getName()))<br>                   .orElseGet(()-&gt; {<br>                        User user1 &#x3D; new User();<br>                        user1.setName(“zhangsan”);<br>                        return user1;<br>                   });<br>}</p><pre><code></code></pre>]]></content>
       
       
       <categories>
@@ -56,11 +85,11 @@
     
     
     <entry>
-      <title>java8之optionAl用法</title>
-      <link href="/2022/04/16/optional/"/>
-      <url>/2022/04/16/optional/</url>
+      <title>find命令</title>
+      <link href="/2022/04/16/find%E5%91%BD%E4%BB%A4/"/>
+      <url>/2022/04/16/find%E5%91%BD%E4%BB%A4/</url>
       
-        <content type="html"><![CDATA[<h1 id="实战使用"><a href="#实战使用" class="headerlink" title="实战使用"></a>实战使用</h1><blockquote><p>以前写法</p></blockquote><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">public String getCity(User user)  throws Exception&#123;</span><br><span class="line">        if(user!=null)&#123;</span><br><span class="line">            if(user.getAddress()!=null)&#123;</span><br><span class="line">                Address address = user.getAddress();</span><br><span class="line">                if(address.getCity()!=null)&#123;</span><br><span class="line">                    return address.getCity();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        throw new Excpetion(&quot;取值错误&quot;); </span><br><span class="line">    &#125;</span><br><span class="line">```    </span><br><span class="line">&gt; JAVA8写法</span><br></pre></td></tr></table></figure><p>public String getCity(User user) throws Exception{<br>    return Optional.ofNullable(user)<br>                   .map(u-&gt; u.getAddress())<br>                   .map(a-&gt;a.getCity())<br>                   .orElseThrow(()-&gt;new Exception(“取指错误”));<br>}</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># 例二</span><br><span class="line">&gt; 以前写法</span><br></pre></td></tr></table></figure><p>if(user!&#x3D;null){<br>    dosomething(user);<br>}</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&gt; JAVA8写法</span><br></pre></td></tr></table></figure><p> Optional.ofNullable(user)<br>    .ifPresent(u-&gt;{<br>        dosomething(u);<br>});</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># 例三</span><br><span class="line"></span><br><span class="line">&gt; 以前写法</span><br></pre></td></tr></table></figure><p>public User getUser(User user) throws Exception{<br>    if(user!&#x3D;null){<br>        String name &#x3D; user.getName();<br>        if(“zhangsan”.equals(name)){<br>            return user;<br>        }<br>    }else{<br>        user &#x3D; new User();<br>        user.setName(“zhangsan”);<br>        return user;<br>    }<br>}</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&gt; java8写法</span><br></pre></td></tr></table></figure><p>public User getUser(User user) {<br>    return Optional.ofNullable(user)<br>                   .filter(u-&gt;”zhangsan”.equals(u.getName()))<br>                   .orElseGet(()-&gt; {<br>                        User user1 &#x3D; new User();<br>                        user1.setName(“zhangsan”);<br>                        return user1;<br>                   });<br>}</p><pre><code></code></pre>]]></content>
+        <content type="html"><![CDATA[<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">将当前目录及其子目录下所有文件后缀为 .c 的文件列出来:</span><br><span class="line"># find . -name &quot;*.c&quot;</span><br><span class="line">将当前目录及其子目录中的所有文件列出：</span><br><span class="line"></span><br><span class="line"># find . -type f</span><br><span class="line">将当前目录及其子目录下所有最近 20 天内更新过的文件列出:</span><br><span class="line"></span><br><span class="line"># find . -ctime -20</span><br><span class="line">查找 /var/log 目录中更改时间在 7 日以前的普通文件，并在删除之前询问它们：</span><br><span class="line"></span><br><span class="line"># find /var/log -type f -mtime +7 -ok rm &#123;&#125; \;</span><br><span class="line">查找当前目录中文件属主具有读、写权限，并且文件所属组的用户和其他用户具有读权限的文件：</span><br><span class="line"></span><br><span class="line"># find . -type f -perm 644 -exec ls -l &#123;&#125; \;</span><br><span class="line">查找系统中所有文件长度为 0 的普通文件，并列出它们的完整路径：</span><br><span class="line"></span><br><span class="line"># find / -type f -size 0 -exec ls -l &#123;&#125; \;</span><br></pre></td></tr></table></figure>]]></content>
       
       
       <categories>
@@ -274,7 +303,7 @@
     
     
     <entry>
-      <title>磁盘扩容</title>
+      <title>负载均衡详解</title>
       <link href="/2019/09/16/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E8%AF%A6%E8%A7%A3/"/>
       <url>/2019/09/16/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E8%AF%A6%E8%A7%A3/</url>
       
