@@ -1,6 +1,6 @@
 ---
 title: synchronized和reentrantlock区别
-date: 2022-04-16 10:57:12
+date: 2020-10-06 10:57:12
 tags:
  - java
 categories: 
@@ -30,8 +30,6 @@ categories:
 2、synchronized是在JVM层面上实现的，不但可以通过一些监控工具监控synchronized的锁定，而且在代码执行时出现异常，JVM会自动释放锁定，但是使用Lock则不行，lock是通过代码实现的，要保证锁定一定会被释放，就必须将unLock()放到finally{}中
 
 3、在资源竞争不是很激烈的情况下，Synchronized的性能要优于ReetrantLock，但是在资源竞争很激烈的情况下，Synchronized的性能会下降几十倍，但是ReetrantLock的性能能维持常态；
-
-下面内容 是转载 [http://zzhonghe.iteye.com/blog/826162](http://zzhonghe.iteye.com/blog/826162)
 
 5.0的多线程任务包对于同步的性能方面有了很大的改进，在原有synchronized关键字的基础上，又增加了ReentrantLock，以及各种Atomic类。了解其性能的优劣程度，有助与我们在特定的情形下做出正确的选择。
 
